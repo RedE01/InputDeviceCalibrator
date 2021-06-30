@@ -13,16 +13,16 @@ CalibratorApplication::~CalibratorApplication() {
 }
 
 void CalibratorApplication::onInit() {
-	std::unique_ptr<ScreenInfo> screenInfo = ScreenInfo::Create(m_monitorName.c_str());
+	ScreenInfo screenInfo(m_monitorName.c_str());
 	m_calibrator = Calibrator::Create(m_inputDeviceName.c_str());
-	if(!screenInfo->screenFound()) {
+	if(!screenInfo.screenFound()) {
 		std::cout << "Error: Monitor '" << m_monitorName << "' could not be found" << std::endl;
 		window->windowOpen = false;
 		return;
 	}
 
-	rgl::Vector2i monitorPos(screenInfo->getX(), screenInfo->getY());
-	rgl::Vector2i monitorSize(screenInfo->getWidth(), screenInfo->getHeight());
+	rgl::Vector2i monitorPos(screenInfo.getX(), screenInfo.getY());
+	rgl::Vector2i monitorSize(screenInfo.getWidth(), screenInfo.getHeight());
 	window->setWindowPos(monitorPos);
 	window->setWindowSize(monitorSize);
 	window->setFullscreen(true);

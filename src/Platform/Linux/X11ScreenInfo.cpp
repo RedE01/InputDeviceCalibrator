@@ -1,10 +1,11 @@
-#include "X11ScreenInfo.h"
+#ifdef IDC_LINUX
+#include "../../ScreenInfo.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xrandr.h>
 #include <cstring>
 
-X11ScreenInfo::X11ScreenInfo(const char* screenName) : ScreenInfo(screenName) {
+ScreenInfo::ScreenInfo(const char* screenName) : m_name(screenName), m_screenFound(false) {
 	unsigned int screenNameLength = std::strlen(screenName);
 
 	Display* display = XOpenDisplay(0);
@@ -35,3 +36,4 @@ X11ScreenInfo::X11ScreenInfo(const char* screenName) : ScreenInfo(screenName) {
 
 	XCloseDisplay(display);
 }
+#endif

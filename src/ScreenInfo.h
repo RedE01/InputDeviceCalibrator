@@ -3,11 +3,8 @@
 #include <string>
 
 class ScreenInfo {
-protected:
-	ScreenInfo(const char* screenName);
-
 public:
-	static std::unique_ptr<ScreenInfo> Create(const char* screenName);
+	ScreenInfo(const char* screenName);
 
 	const char* getName() const { return m_name.c_str(); }
 	bool screenFound() const { return m_screenFound; }
@@ -18,7 +15,7 @@ public:
 	unsigned int getRootScreenWidth() const { return m_rootScreenWidth; }
 	unsigned int getRootScreenHeight() const { return m_rootScreenHeight; }
 
-protected:
+private:
 	const std::string m_name;
 	bool m_screenFound;
 	unsigned int m_x;
