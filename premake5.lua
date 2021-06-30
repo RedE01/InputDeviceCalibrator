@@ -27,7 +27,7 @@ project "InputDeviceCalibrator"
 
     filter "system:linux"
         defines "IDC_LINUX"
-        links { "X11", "Xrandr"}
+        links { "X11", "Xrandr", "Xi"}
         files {
             "src/Platform/Linux/**.h",
             "src/Platform/Linux/**.cpp"
