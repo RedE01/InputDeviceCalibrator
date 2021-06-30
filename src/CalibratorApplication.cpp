@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-CalibratorApplication::CalibratorApplication(const char* monitorName) : m_monitorName(monitorName) {
+CalibratorApplication::CalibratorApplication(const char* inputDeviceName, const char* monitorName) : m_inputDeviceName(inputDeviceName), m_monitorName(monitorName) {
 
 }
 
@@ -13,7 +13,8 @@ CalibratorApplication::~CalibratorApplication() {
 }
 
 void CalibratorApplication::onInit() {
-	std::unique_ptr<ScreenInfo> screenInfo = ScreenInfo::Create(m_monitorName);
+	std::unique_ptr<ScreenInfo> screenInfo = ScreenInfo::Create(m_monitorName.c_str());
+	m_calibrator = Calibrator::Create(m_inputDeviceName.c_str());
 	if(!screenInfo->screenFound()) {
 		std::cout << "Error: Monitor '" << m_monitorName << "' could not be found" << std::endl;
 		window->windowOpen = false;

@@ -1,11 +1,12 @@
 #pragma once
 #include <GraphicsLibrary.h>
+#include <string>
 
 class Calibrator;
 
 class CalibratorApplication : public rgl::Application {
 public:
-	CalibratorApplication(const char* monitorName);
+	CalibratorApplication(const char* inputDeviceName, const char* monitorName);
 	~CalibratorApplication();
 
 	virtual void onInit() override;
@@ -18,5 +19,7 @@ private:
 	void drawTarget(int x, int y, int width, int height);
 
 private:
-	const char* m_monitorName;
+	const std::string m_inputDeviceName;
+	const std::string m_monitorName;
+	std::unique_ptr<Calibrator> m_calibrator;
 };
