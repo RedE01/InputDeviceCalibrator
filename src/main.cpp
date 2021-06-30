@@ -2,6 +2,7 @@
 #include "CalibratorApplication.h"
 
 #include <iostream>
+#include <fstream>
 #include <cstring>
 
 int main(int argc, const char** argv) {
@@ -53,4 +54,24 @@ int main(int argc, const char** argv) {
 	CalibratorApplication app(inputDeviceName, displayName);
 	app.create("InputDeviceCalibrator", rgl::Vector2i(1, 1));
 	app.run();
+
+	std::string calibrationString = app.getCalibrationString();
+
+	if(calibrationString.length() > 0) {
+		if(std::strlen(outputFileName) > 0) {
+			std::ofstream outFile(outputFileName);
+			if(!outFile.is_open()) {
+				std::cout << "Error: Could not open file '" << outputFileName << "'" << std::endl;
+				return 1;
+			}
+
+			outFile << "Coordinate Transform Matrix=" << calibrationString;
+			outFile.close();
+
+			std::cout << "Coordinate Transform Matrix written to '" << outputFileName << "'" << std::endl;
+		}
+		else {
+			std::cout << "Coordinate Transform Matrix=" << calibrationString << std::endl;
+		}
+	}
 }
