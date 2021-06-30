@@ -3,8 +3,9 @@
 
 class X11Calibrator : public Calibrator {
 public:
-	X11Calibrator(const char* deviceName);
+	X11Calibrator(const char* deviceName, ScreenInfo screenInfo);
+	virtual bool deviceExists() const override;
 
-private:
-	CalibrationData oldCalibrationData;
+protected:
+	virtual std::optional<CalibrationData> getOldCalibrationData() const override;
 };

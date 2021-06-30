@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-CalibratorApplication::CalibratorApplication(const char* inputDeviceName, const char* monitorName) : m_inputDeviceName(inputDeviceName), m_monitorName(monitorName) {
+CalibratorApplication::CalibratorApplication(const char* inputDeviceName, const char* monitorName) : m_inputDeviceName(inputDeviceName), m_monitorName(monitorName), m_calibrationString("") {
 
 }
 
@@ -14,9 +14,15 @@ CalibratorApplication::~CalibratorApplication() {
 
 void CalibratorApplication::onInit() {
 	ScreenInfo screenInfo(m_monitorName.c_str());
-	m_calibrator = Calibrator::Create(m_inputDeviceName.c_str());
 	if(!screenInfo.screenFound()) {
 		std::cout << "Error: Monitor '" << m_monitorName << "' could not be found" << std::endl;
+		window->windowOpen = false;
+		return;
+	}
+
+	m_calibrator = Calibrator::Create(m_inputDeviceName.c_str(), screenInfo);
+	if(!m_calibrator->deviceExists()) {
+		std::cout << "Error: Input device '" << m_calibrator->getDeviceName() << "' could not be found" << std::endl;
 		window->windowOpen = false;
 		return;
 	}
@@ -38,7 +44,17 @@ void CalibratorApplication::onEvent(rgl::Event* event) {
 	if(event->GetEventType() == rgl::EventType::WindowExpose) redraw();
 
 	if(event->GetEventType() == rgl::EventType::MouseButtonPressed && ((rgl::MouseButtonPressedEvent*)event)->button == rgl::MouseButton::LEFT) {
-		std::cout << ((rgl::MouseButtonPressedEvent*)event)->rootWindowCoords.x << ", " << ((rgl::MouseButtonPressedEvent*)event)->rootWindowCoords.y << std::endl;
+		m_calibrator->registerClick(((rgl::MouseButtonPressedEvent*)event)->rootWindowCoords.x, ((rgl::MouseButtonPressedEvent*)event)->rootWindowCoords.y);
+
+		redraw();
+
+		if(m_calibrator->getNumberOfClicks() == 4) {
+			std::optional<CalibrationData> calibrationData = m_calibrator->calculateCalibrationData();
+
+			if(calibrationData.has_value()) m_calibrationString = Calibrator::GetCoordinateTransformMatrixString(calibrationData.value());
+
+			window->windowOpen = false;
+		}
 	}
 }
 
@@ -48,9 +64,9 @@ void CalibratorApplication::redraw() {
 
 	drawTextBox();
 
-	int distFromEdge = 64;
 	int targetSize = 64;
-	drawTarget(distFromEdge, distFromEdge, targetSize, targetSize);
+	Vector2<int> targetPos = m_calibrator->getTargetScreenCoordinates(m_calibrator->getNumberOfClicks());
+	drawTarget(targetPos.x, targetPos.y, targetSize, targetSize);
 }
 
 void CalibratorApplication::drawTextBox() {
