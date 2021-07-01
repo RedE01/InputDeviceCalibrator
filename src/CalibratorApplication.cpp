@@ -1,5 +1,4 @@
 #include "CalibratorApplication.h"
-#include "ScreenInfo.h"
 #include "Calibrator.h"
 
 #include <iostream>
@@ -20,12 +19,14 @@ void CalibratorApplication::onInit() {
 		return;
 	}
 
-	m_calibrator = Calibrator::Create(m_inputDeviceName.c_str(), screenInfo);
-	if(!m_calibrator->deviceExists()) {
-		std::cout << "Error: Input device '" << m_calibrator->getDeviceName() << "' could not be found" << std::endl;
+	InputDeviceData inputDeviceData(m_inputDeviceName.c_str());
+	if(!inputDeviceData.deviceExists()) {
+		std::cout << "Error: Input device '" << m_inputDeviceName << "' could not be found" << std::endl;
 		window->windowOpen = false;
 		return;
 	}
+
+	m_calibrator = std::make_unique<Calibrator>(inputDeviceData, screenInfo);
 
 	rgl::Vector2i monitorPos(screenInfo.getX(), screenInfo.getY());
 	rgl::Vector2i monitorSize(screenInfo.getWidth(), screenInfo.getHeight());
@@ -49,9 +50,9 @@ void CalibratorApplication::onEvent(rgl::Event* event) {
 		redraw();
 
 		if(m_calibrator->getNumberOfClicks() == 4) {
-			std::optional<CalibrationData> calibrationData = m_calibrator->calculateCalibrationData();
+			std::optional<InputDeviceData> calibrationData = m_calibrator->calculateCalibrationData();
 
-			if(calibrationData.has_value()) m_calibrationString = Calibrator::GetCoordinateTransformMatrixString(calibrationData.value());
+			if(calibrationData.has_value()) m_calibrationString = calibrationData->getCoordinateTransformMatrixString();
 
 			window->windowOpen = false;
 		}

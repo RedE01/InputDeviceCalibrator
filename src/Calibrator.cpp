@@ -1,8 +1,6 @@
 #include "Calibrator.h"
-#include "Platform/Linux/X11Calibrator.h"
-#include <sstream>
 
-Calibrator::Calibrator(const char* deviceName, ScreenInfo screenInfo) : m_deviceName(deviceName), m_screenInfo(screenInfo), m_numberOfClicks(0) {
+Calibrator::Calibrator(InputDeviceData inputDeviceData, ScreenInfo screenInfo) : m_oldInputDeviceData(inputDeviceData), m_screenInfo(screenInfo), m_numberOfClicks(0) {
 	Vector2<float> screenPosNormalized(screenInfo.getX() / float(screenInfo.getRootScreenWidth()), screenInfo.getY() / float(screenInfo.getRootScreenHeight()));
 	Vector2<float> screenSizeNormalized(screenInfo.getWidth() / float(screenInfo.getRootScreenWidth()), screenInfo.getHeight() / float(screenInfo.getRootScreenHeight()));
 	float targetOffsetScaler = 0.1;
@@ -21,14 +19,6 @@ Calibrator::Calibrator(const char* deviceName, ScreenInfo screenInfo) : m_device
 	m_targets[3].y = screenPosNormalized.y + screenSizeNormalized.y - targetOffsetNormalized.y;
 }
 
-std::unique_ptr<Calibrator> Calibrator::Create(const char* deviceName, ScreenInfo screenInfo) {
-	#ifdef IDC_LINUX
-		return std::make_unique<X11Calibrator>(deviceName, screenInfo);
-	#endif
-
-	return std::unique_ptr<Calibrator>();
-}
-
 void Calibrator::registerClick(int clickX, int clickY) {
 	if(m_numberOfClicks >= 4) return;
 
@@ -37,16 +27,13 @@ void Calibrator::registerClick(int clickX, int clickY) {
 	m_numberOfClicks++;
 }
 
-std::optional<CalibrationData> Calibrator::calculateCalibrationData() const {
+std::optional<InputDeviceData> Calibrator::calculateCalibrationData() const {
 	if(m_numberOfClicks < 4) return {};
-
-	std::optional<CalibrationData> oldCalibrationData = getOldCalibrationData();
-	if(!oldCalibrationData.has_value()) return {};
 
 	Vector2<float> rawClicks[4];
 	for(int i = 0; i < 4; ++i) {
-		rawClicks[i].x = (m_clicks[i].x - oldCalibrationData->xOffset) / oldCalibrationData->xScale;
-		rawClicks[i].y = (m_clicks[i].y - oldCalibrationData->yOffset) / oldCalibrationData->yScale;
+		rawClicks[i].x = (m_clicks[i].x - m_oldInputDeviceData.coordinateTransformMatrix[2]) / m_oldInputDeviceData.coordinateTransformMatrix[0];
+		rawClicks[i].y = (m_clicks[i].y - m_oldInputDeviceData.coordinateTransformMatrix[5]) / m_oldInputDeviceData.coordinateTransformMatrix[4];
 	}
 
 	Vector2<float> rawClick1((rawClicks[0].x + rawClicks[2].x) / 2.0, (rawClicks[0].y + rawClicks[1].y) / 2.0);
@@ -55,11 +42,11 @@ std::optional<CalibrationData> Calibrator::calculateCalibrationData() const {
 	Vector2<float> target1 = m_targets[0];
 	Vector2<float> target2 = m_targets[3];
 
-	CalibrationData calibrationData;
-	calibrationData.xScale = (target2.x - target1.x) / (rawClick2.x - rawClick1.x);
-	calibrationData.yScale = (target2.y - target1.y) / (rawClick2.y - rawClick1.y);
-	calibrationData.xOffset = target1.x - rawClick1.x * calibrationData.xScale;
-	calibrationData.yOffset = target1.y - rawClick1.y * calibrationData.yScale;
+	InputDeviceData calibrationData(m_oldInputDeviceData);
+	calibrationData.coordinateTransformMatrix[0] = (target2.x - target1.x) / (rawClick2.x - rawClick1.x);
+	calibrationData.coordinateTransformMatrix[4] = (target2.y - target1.y) / (rawClick2.y - rawClick1.y);
+	calibrationData.coordinateTransformMatrix[2] = target1.x - rawClick1.x * calibrationData.coordinateTransformMatrix[0];
+	calibrationData.coordinateTransformMatrix[5] = target1.y - rawClick1.y * calibrationData.coordinateTransformMatrix[4];
 
 	return calibrationData;
 }
@@ -70,12 +57,4 @@ Vector2<int> Calibrator::getTargetScreenCoordinates(unsigned int targetNumber) {
 	Vector2<int> target(m_targets[targetNumber].x * m_screenInfo.getRootScreenWidth(), m_targets[targetNumber].y * m_screenInfo.getRootScreenHeight());
 	Vector2<int> targetLocal(target.x - m_screenInfo.getX(), target.y - m_screenInfo.getY());
 	return targetLocal;
-}
-
-std::string Calibrator::GetCoordinateTransformMatrixString(CalibrationData calibrationData) {
-	std::stringstream ss;
-	ss << calibrationData.xScale << " 0 " << calibrationData.xOffset;
-	ss << " 0 " << calibrationData.yScale  << " " << calibrationData.yOffset;
-	ss << " 0" << " 0" << " 1";
-	return ss.str();
 }
